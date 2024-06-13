@@ -1,0 +1,332 @@
+## SOLUCIONES PROPUESTAS
+
+## 1.Total de ventas en el año 2009:
+¿Cuál es el total de ventas realizadas en el año 2009?
+```sql
+DECLARE @fecha_inicio_2007 datetime = '2007-01-01';
+DECLARE @fecha_fin_2007 datetime = '2007-12-31';
+
+SELECT SUM(total) AS Total_Ventas
+FROM ve.documento
+WHERE fechaMovimiento BETWEEN @fecha_inicio_2007 AND @fecha_fin_2007;
+
+select * from ve.documento
+```
+## 2.Personas sin entradas registradas en la tabla personaDestino:
+¿Cuáles son las personas que no tienen una entrada registrada en la tabla personaDestino?
+```sql
+select * from ma.persona
+select * from ma.personaDestino
+
+SELECT p.*
+FROM ma.persona p
+LEFT JOIN ma.personaDestino pd ON p.persona = pd.persona
+WHERE pd.persona IS NULL;
+```
+
+## 3.Promedio del monto total de transacciones de ventas:
+¿Cuál es el promedio del monto total de todas las transacciones de ventas registradas en la base de datos, expresado en moneda local (soles peruanos)?
+
+```sql
+select FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+from ve.documento;
+```
+
+## 4.Documentos de ventas con monto total superior al promedio:
+Obtén una lista de todos los documentos de ventas cuyo monto total supere el promedio del monto total de todos los documentos de ventas registrados en la base de datos.
+```sql
+SELECT *
+FROM ve.documento
+WHERE total > (SELECT AVG(total) FROM ve.documento)
+ORDER BY(documento);
+
+```
+## 5.Documentos de ventas pagados con una forma de pago específica:
+Listar los documentos de ventas que han sido pagados utilizando una forma de pago específica desde la tabla documentoPago.
+```sql
+SELECT d.*
+FROM ve.documentoPago dp
+INNER JOIN ve.documento d ON dp.documento = d.documento
+INNER JOIN pa.pago p ON dp.pago = p.pago
+WHERE p.formaPago = 1
+ORDER BY (dp.documento),(p.pago),(p.formaPago);
+
+```
+## 6.Detalles de documentos de ventas canjeados:
+
+¿Cómo se distribuye el saldo total entre los diferentes almacenes, considerando la información de los saldos iniciales de inventario en la base de datos?
+```sql
+SELECT almacen, FORMAT(AVG(costoSoles), 'C', 'es-PE') AS Saldo_Total
+FROM ma.saldosIniciales
+GROUP BY almacen
+ORDER BY(almacen),(Saldo_Total);
+```
+
+## 7.Saldo total distribuido por almacén:
+Obtén una lista de todos los documentos de ventas cuyo monto total supere el promedio del monto total de todos los documentos de ventas registrados en la base de datos.
+```sql
+SELECT *
+FROM ve.documento
+WHERE total > (SELECT AVG(total) FROM ve.documento)
+ORDER BY(documento);
+
+```
+
+## 8.Detalles de documentos de ventas por vendedor:
+¿Cuáles son los detalles de los documentos de ventas asociados al vendedor con identificación número 3 en la base de datos, considerando la información detallada de cada documento en relación con sus elementos de venta?
+```sql 
+SELECT d.*
+FROM ve.documento d
+INNER JOIN ve.documentoDetalle dd ON d.documento = dd.documento
+WHERE d.vendedor = 3
+ORDER BY(dd.documento);
+```
+
+## 9.Total de ventas por año y vendedor:
+¿Cuál es el total de ventas por año y vendedor en la base de datos de ventas, considerando solo aquellos vendedores cuya suma total de ventas en un año específico sea superior a 100,000 unidades monetarias?
+```sql
+SELECT vendedor, YEAR(fechaMovimiento) AS Anio, AVG(total) AS Total_Ventas, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+GROUP BY vendedor, YEAR(fechaMovimiento)
+HAVING SUM(total) > 100000
+ORDER BY (vendedor),(total_ventas);
+
+```
+
+## 10.Desglose mensual de ventas por vendedor:
+¿Cuál es el desglose mensual de las ventas por vendedor en cada año, considerando la suma total de ventas para cada mes y año específico?
+```sql
+SELECT vendedor, MONTH (fechaMovimiento) AS Anio, AVG(total) AS Total_Ventas, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+GROUP BY vendedor, MONTH (fechaMovimiento)
+HAVING SUM(total) > 100000
+ORDER BY (vendedor),(total_ventas) ;
+```
+
+## 11.Clientes que compraron más de 10 veces en un año:
+¿Cuántos clientes compraron más de 10 veces en un año?
+```sql
+SELECT persona, YEAR(fechaMovimiento) AS Año, COUNT(*) AS Compras, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+WHERE tipoMovimiento = 1
+GROUP BY persona, YEAR(fechaMovimiento)
+HAVING COUNT(*) > 10
+ORDER BY (persona),( Año);
+```
+
+## 12.Total acumulado de descuentos por vendedor:
+¿Cuál es el total acumulado de descuentos aplicados por cada vendedor en la base de datos de ventas, considerando la suma de los descuentos descto01, descto02 y descto03, y mostrando solo aquellos vendedores cuyo total de descuentos acumulados supere los 5000?
+```sql
+SELECT vendedor, FORMAT(AVG(descto01 + descto02 + descto03),'C','es-PE') 
+AS Descuentos_Acumulados, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+GROUP BY vendedor
+HAVING sum(descto01 + descto02 + descto03) > 5000
+ORDER BY(vendedor),(Descuentos_Acumulados);
+```
+## 13.Total anual de ventas por persona:
+¿Cuál es el total anual de ventas realizadas por cada persona en la base de datos de ventas, considerando únicamente los movimientos de tipo venta (tipoMovimiento = 1), y mostrando solo aquellas personas cuyas ventas anuales superen los 10000?
+```sql
+SELECT persona, YEAR(fechaMovimiento) AS Año, FORMAT(AVG(total),'C','es-PE') 
+AS Total_Anual, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+WHERE tipoMovimiento = 1
+GROUP BY persona, YEAR(fechaMovimiento)
+HAVING SUM(total) > 10000
+ORDER BY (persona),(Año);
+```
+
+## 14.Recuento total de productos vendidos por vendedor:
+¿Cuál es el recuento total de productos vendidos por cada vendedor en la base de datos de ventas?
+```sql
+SELECT d.vendedor, COUNT(dd.documentoDetalle) AS Total_Productos_Vendidos
+FROM ve.documentoDetalle dd
+JOIN ve.documento d ON dd.documento = d.documento
+GROUP BY d.vendedor
+ORDER BY(vendedor);
+```
+
+## 15.Ventas mensuales desglosadas por tipo de pago:
+¿Cuánto se vendió cada mes del año 2009, desglosado por tipo de pago?
+```sql
+SELECT MONTH(d.fechaMovimiento) AS Mes, p.formaPago, SUM(d.total) AS Total_Ventas
+FROM ve.documento d
+JOIN pa.pago p ON d.vendedor = p.vendedor
+WHERE YEAR(d.fechaMovimiento) = 2009
+GROUP BY MONTH(d.fechaMovimiento), p.formaPago
+ORDER BY(Mes),(formaPago),(Total_Ventas);
+```
+
+## 16.Total de ventas en el año 2007:
+¿Cuál es el total de ventas realizadas en el año 2007?
+```sql
+DECLARE @fecha_inicio_2007 datetime = '2007-01-01';
+DECLARE @fecha_fin_2007 datetime = '2007-12-31';
+
+SELECT SUM(total) AS Total_Ventas
+FROM ve.documento
+WHERE fechaMovimiento BETWEEN @fecha_inicio_2007 AND @fecha_fin_2007;
+
+select * from ve.documento
+```
+
+## 17.Personas sin entradas registradas en la tabla personaDestino en el año 2008:
+¿Cuáles son las personas que no tienen una entrada registrada en la tabla personaDestino en el año 2008?
+
+```sql
+select * from ma.persona
+select * from ma.personaDestino
+
+SELECT *
+FROM Personas
+WHERE Personas.ID NOT IN (
+    SELECT DISTINCT PersonaID
+    FROM PersonaDestino
+    WHERE YEAR(Fecha) = 2008
+);
+
+```
+
+## 18.Promedio del monto total de transacciones de ventas en el año 2009:
+¿Cuál es el promedio del monto total de todas las transacciones de ventas registradas en la base de datos en el año 2009, expresado en moneda local (soles peruanos)?
+
+```sql
+select FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+from ve.documento
+WHERE YEAR(fechaMovimiento)=2009
+```
+
+## 19.Documentos de ventas con monto total superior al promedio en el año 2005:
+Obtén una lista de todos los documentos de ventas cuyo monto total supere el promedio del monto total de todos los documentos de ventas registrados en la base de datos en el año 2005.
+```sql
+select * from ve.documento
+where total >(select AVG(total) 
+FROM ve.documento)
+WHERE YEAR (fechaMovimiento)=2005
+ORDER BY(Documento),(TipoDocumento);
+```
+
+## 20.Documentos de ventas pagados con una forma de pago específica en el año 2006:
+Listar los documentos de ventas que han sido pagados utilizando una forma de pago específica desde la tabla documentoPago en el año 2006.
+
+```sql
+select * from pa.pago
+
+SELECT d.*
+FROM ve.documentoPago dp
+INNER JOIN ve.documento d ON dp.documento = d.documento
+INNER JOIN pa.pago p ON dp.pago = p.pago
+WHERE p.formaPago = 1 AND YEAR(fechaMovimiento) = 2006
+ORDER BY (documento); -- 1 es pago al Contado
+```
+
+## 21.Detalles de documentos de ventas canjeados en el año 2007:
+¿Cómo se distribuye el saldo total entre los diferentes almacenes, considerando la información de los saldos iniciales de inventario en la base de datos en el año 2007?
+```sql
+SELECT almacen, SUM(costoSoles) AS Saldo_Total
+FROM  ma.saldosIniciales
+WHERE YEAR(periodo)=2007
+GROUP BY almacen
+ORDER BY almacen;
+```
+
+## 22.Saldo total distribuido por almacén en el año 2008:
+Obtén una lista de todos los documentos de ventas cuyo monto total supere el promedio del monto total de todos los documentos de ventas registrados en la base de datos en el año 2008.
+```sql
+SELECT *
+FROM ve.documento
+WHERE total > (
+    SELECT AVG(total)
+    FROM ve.documento
+    WHERE YEAR(fechaMovimiento) = 2008
+)
+AND YEAR(fechaMovimiento) = 2008
+ORDER BY documento
+```
+
+## 23.Detalles de documentos de ventas por vendedor en el año 2009:
+¿Cuáles son los detalles de los documentos de ventas asociados al vendedor con identificación número 3 en la base de datos en el año 2009, considerando la información detallada de cada documento en relación con sus elementos de venta?
+```sql
+SELECT d.*,dd.*,
+FORMAT(d.total, 'C','es-PE') AS Total_Ventas_En_Soles
+FROM ve.documento d
+INNER JOIN ve.documentoDetalle dd ON d.documento = dd.documento
+WHERE d.vendedor = 3;AND YEAR(d.fechaMovimiento) = 2009
+ORDER BY d.total;
+```
+
+## 24.Total de ventas por año y vendedor en el año 2008:
+¿Cuál es el total de ventas por año y vendedor en la base de datos de ventas, considerando solo aquellos vendedores cuya suma total de ventas en el año 2008 sea superior a 100,000 unidades monetarias?
+```sql
+SELECT  vendedor, YEAR(fechaMovimiento) AS Año, SUM(total) AS Total_Ventas, FORMAT(SUM(total), 'C', 'es-PE') AS [MontoTotal en Soles]
+FROM ve.documento
+GROUP BY vendedor, YEAR(fechaMovimiento)
+HAVING YEAR(fechaMovimiento) = 2008 AND SUM(total) > 100000
+ORDER BY vendedor, Total_Ventas;
+```
+
+## 25.Desglose mensual de ventas por vendedor en el año 2009:
+¿Cuál es el desglose mensual de las ventas por vendedor en cada año, considerando la suma total de ventas para cada mes y año específico en el año 2009?
+```sql
+SELECT vendedor, YEAR(fechaMovimiento) AS Anio, MONTH(fechaMovimiento) AS Mes, SUM(total) AS Total_Ventas, FORMAT(SUM(total), 'C', 'es-PE') AS [Total de Ventas en Soles]FROM  ve.documento
+WHERE YEAR(fechaMovimiento) = 2009
+GROUP BY vendedor, YEAR(fechaMovimiento), MONTH(fechaMovimiento)
+ORDER BY vendedor, YEAR(fechaMovimiento), MONTH(fechaMovimiento);
+
+```
+## 26.Clientes que compraron más de 10 veces en un año en el año 2005:
+¿Cuántos clientes compraron más de 10 veces en un año en el año 2005?
+```sql
+SELECT persona, YEAR(fechaMovimiento) AS Año, COUNT(*) AS Compras, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+WHERE tipoMovimiento = 1 AND YEAR(fechaMovimiento) = 2005
+GROUP BY persona, YEAR(fechaMovimiento)
+HAVING COUNT(*) > 10
+ORDER BY Año;
+```
+
+## 27.Total acumulado de descuentos por vendedor en el año 2006:
+¿Cuál es el total acumulado de descuentos aplicados por cada vendedor en la base de datos de ventas, considerando la suma de los descuentos descto01, descto02 y descto03, y mostrando solo aquellos vendedores cuyo total de descuentos acumulados supere los 5000 en el año 2005?
+```sql
+SELECT vendedor, SUM(descto01 + descto02 + descto03)  AS Descuentos_Acumulados, FORMAT(AVG(total), 'C', 'es-PE') AS [Promedio del Monto Total en Soles]
+FROM ve.documento
+WHERE YEAR(fechaMovimiento) = 2005
+GROUP BY vendedor
+HAVING SUM(descto01 + descto02 + descto03) > 5000
+ORDER BY vendedor;
+
+```
+
+## 28.Total anual de ventas por persona en el año 2007:
+¿Cuál es el total anual de ventas realizadas por cada persona en la base de datos de ventas, considerando únicamente los movimientos de tipo venta (tipoMovimiento = 1), y mostrando solo aquellas personas cuyas ventas anuales superen los 10000 en el año 2007?
+```sql
+
+SELECT persona, YEAR(fechaMovimiento) AS Año, FORMAT(SUM(total), 'C', 'es-PE') AS Total_Anual
+FROM ve.documento
+WHERE tipoMovimiento = 1 AND YEAR(fechaMovimiento) = 2007
+GROUP BY persona, YEAR(fechaMovimiento)
+HAVING SUM(total) > 10000
+ORDER BY Año;
+
+```
+
+## 29.Recuento total de productos vendidos por vendedor en el año 2008:
+¿Cuál es el recuento total de productos vendidos por cada vendedor en la base de datos de ventas en el año 2008?
+```sql
+SELECT d.vendedor, COUNT(dd.documentoDetalle) AS Total_Productos_Vendidos
+FROM  ve.documentoDetalle dd
+JOIN  ve.documento d ON dd.documento = d.documento
+WHERE YEAR(d.fechaMovimiento) = 2008
+GROUP BY d.vendedor;
+
+```
+
+## 30.Ventas mensuales desglosadas por tipo de pago en el año 2009:
+¿Cuánto se vendió cada mes del año 2009, desglosado por tipo de pago?
+```sql
+SELECT FORMAT(MONTH(d.fechaMovimiento), 'c','es-PE')AS Mes, p.formaPago, SUM(d.total) AS Total_Ventas
+FROM ve.documento d
+JOIN pa.pago p ON d.vendedor = p.vendedor
+WHERE YEAR (d.fechaMovimiento) = 2009
+GROUP BY MONTH (d.fechaMovimiento),p.formaPago;
+```
